@@ -1,0 +1,10 @@
+{
+  "api_id": "39759728",
+  "api_hash": "43cb9dc9f090c7f147d76eca7e6ebbbc",
+  "bot_token": "8192380712:AAFBEp99YqLpRKSvB_XIhyPH7ZXlprt9qTA",
+  "admin": "hck_togen",
+  "delay": 60,
+  "msg_delay": 4,
+  "max_channels": 7,
+  "deepseek_api_key": "sk-3ddc1fd76de24ca7939fb99cd009ad0d"
+}

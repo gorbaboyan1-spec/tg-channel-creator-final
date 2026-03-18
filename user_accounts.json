@@ -1,0 +1,19 @@
+{
+  "gor": {
+    "password_hash": "d6b9a245f0d8054abbba6596f2a795370a12727b5f9babd95c8c9b891e7a8aaf",
+    "license_key": "TGC-VNO9-XR30-0I9Y",
+    "created_at": "2026-03-16 22:20"
+  },
+  "admin": {
+    "password_hash": "d6b9a245f0d8054abbba6596f2a795370a12727b5f9babd95c8c9b891e7a8aaf",
+    "license_key": "TGC-TEST-0001-DEMO",
+    "created_at": "2026-03-16 22:32"
+  },
+  "fdfdg": {
+    "password_hash": "d6b9a245f0d8054abbba6596f2a795370a12727b5f9babd95c8c9b891e7a8aaf",
+    "email": "baboyangor@mail.ru",
+    "email_confirmed": true,
+    "license_key": null,
+    "created_at": "2026-03-18 07:23"
+  }
+}

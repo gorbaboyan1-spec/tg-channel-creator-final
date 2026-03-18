@@ -1,0 +1,35 @@
+{
+  "sess_0defe4e35f19fd96551588ea3ca6af37": {
+    "key": "TGC-TEST-1234-ABCD",
+    "device_token": "dt-test",
+    "created_at": "2026-03-16T22:01:27.706931"
+  },
+  "sess_6a8171cf282584a0a8e798d00854eee1": {
+    "username": "gor",
+    "created_at": "2026-03-16T22:23:08.749724"
+  },
+  "sess_8a8a476cc2fb20d1c31c65a0e2195b8c": {
+    "username": "admin",
+    "created_at": "2026-03-16T22:32:41.056201"
+  },
+  "sess_40495908289f75c0cd546ff81e767bf6": {
+    "username": "gor",
+    "created_at": "2026-03-16T22:44:49.867619"
+  },
+  "sess_1e69e6f43f52637820cb95d5dab02f12": {
+    "username": "gor",
+    "created_at": "2026-03-16T22:48:58.843522"
+  },
+  "sess_4a09fc3dd5dc7330c87bceecf679e521": {
+    "username": "gor",
+    "created_at": "2026-03-17T09:17:52.192989"
+  },
+  "sess_17620ff437387e1efbc26effe933a68e": {
+    "username": "gor",
+    "created_at": "2026-03-17T20:57:32.045339"
+  },
+  "sess_5448b0abc5f6dee084220d254c23b8a5": {
+    "username": "fdfdg",
+    "created_at": "2026-03-18T07:23:19.743018"
+  }
+}

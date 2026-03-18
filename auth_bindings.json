@@ -1,0 +1,14 @@
+{
+  "TGC-AAAA-1111-XXXX": {
+    "device_token": "dt-mmt7uszg-p8iz8jp0-4n92o31f",
+    "bound_at": "2026-03-16 16:33:32"
+  },
+  "TGC-BBBB-2222-YYYY": {
+    "device_token": "dt-mmt7wy49-hbvjjndf-vc1t7cz8",
+    "bound_at": "2026-03-16 16:33:49"
+  },
+  "01": {
+    "device_token": "dt-mmt88mbb-oz84z8b0-oonukz47",
+    "bound_at": "2026-03-16 16:36:35"
+  }
+}

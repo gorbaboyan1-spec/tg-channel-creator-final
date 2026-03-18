@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — TG Channel Creator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--bg2:#181c26;--bg3:#1e2336;--bg4:#252b3b;
+  --ac:#4f8ef7;--ac2:#3a6fd8;--ac-dim:#4f8ef722;
+  --red:#e05252;--red-dim:#e0525222;
+  --green:#4caf7a;--green-dim:#4caf7a22;
+  --yellow:#f0b429;--yellow-dim:#f0b42922;
+  --text:#d8dff5;--text2:#8a93b2;--text3:#5a6180;
+  --border:#282e42;--radius:8px;--shadow:0 4px 24px #0008;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;min-height:100vh}
+
+/* ── LOGIN ── */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:40px 36px;width:340px;box-shadow:var(--shadow)}
+.login-box h1{font-size:20px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.login-box p{color:var(--text2);font-size:13px;margin-bottom:28px}
+.login-box input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-size:14px;outline:none;transition:border .2s}
+.login-box input:focus{border-color:var(--ac)}
+.login-box button{margin-top:14px;width:100%;background:var(--ac);color:#fff;border:none;border-radius:var(--radius);padding:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s}
+.login-box button:hover{background:var(--ac2)}
+.login-err{color:var(--red);font-size:12px;margin-top:10px;display:none}
+
+/* ── LAYOUT ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;padding:0 20px;height:52px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar .logo{font-weight:700;font-size:15px;color:var(--text)}
+.topbar .logo span{color:var(--ac)}
+.topbar .spacer{flex:1}
+.topbar .admin-badge{background:var(--ac-dim);color:var(--ac);border-radius:4px;padding:3px 10px;font-size:12px;font-weight:600}
+.topbar .online-pill{background:var(--green-dim);color:var(--green);border-radius:4px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.topbar .online-pill:hover{background:var(--green);color:#fff}
+.topbar .logout-btn{background:none;border:1px solid var(--border);color:var(--text2);border-radius:var(--radius);padding:5px 12px;font-size:13px;cursor:pointer;transition:all .2s}
+.topbar .logout-btn:hover{border-color:var(--red);color:var(--red)}
+
+.main{display:flex;flex:1}
+.sidebar{width:200px;background:var(--bg2);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:4px;position:sticky;top:52px;height:calc(100vh - 52px);overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius);cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;transition:all .2s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--ac-dim);color:var(--ac)}
+.nav-item .icon{font-size:16px;width:18px;text-align:center}
+.nav-count{margin-left:auto;background:var(--green);color:#fff;border-radius:20px;font-size:10px;font-weight:700;padding:1px 7px;min-width:18px;text-align:center}
+
+.content{flex:1;padding:24px;overflow-y:auto;max-height:calc(100vh - 52px)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* ── COMMON ── */
+.section-title{font-size:18px;font-weight:700;margin-bottom:18px;color:var(--text)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.card+.card{margin-top:14px}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;cursor:default}
+.stat-card.clickable{cursor:pointer;transition:border-color .2s}
+.stat-card.clickable:hover{border-color:var(--ac)}
+.stat-card .val{font-size:28px;font-weight:700;color:var(--text);line-height:1}
+.stat-card .lbl{font-size:12px;color:var(--text2);margin-top:6px}
+.stat-card.ac .val{color:var(--ac)}
+.stat-card.green .val{color:var(--green)}
+.stat-card.red .val{color:var(--red)}
+.stat-card.yellow .val{color:var(--yellow)}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;background:var(--bg2)}
+th{background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;padding:10px 12px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-green{background:var(--green-dim);color:var(--green)}
+.badge-red{background:var(--red-dim);color:var(--red)}
+.badge-yellow{background:var(--yellow-dim);color:var(--yellow)}
+.badge-blue{background:var(--ac-dim);color:var(--ac)}
+.badge-gray{background:#ffffff11;color:var(--text2)}
+.dot-online{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:5px;box-shadow:0 0 6px var(--green)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--radius);border:none;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-primary{background:var(--ac);color:#fff}
+.btn-primary:hover{background:var(--ac2)}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid var(--red)30}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{color:var(--text);border-color:var(--text3)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-xs{padding:2px 8px;font-size:11px}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.toolbar .spacer{flex:1}
+.search-input{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:7px 12px;color:var(--text);font-size:13px;width:220px;outline:none;transition:border .2s}
+.search-input:focus{border-color:var(--ac)}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:14px}
+.form-group label{display:block;color:var(--text2);font-size:12px;margin-bottom:6px;font-weight:500}
+.form-control{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;color:var(--text);font-size:13px;outline:none;transition:border .2s}
+.form-control:focus{border-color:var(--ac)}
+textarea.form-control{resize:vertical;min-height:80px}
+select.form-control{appearance:none;cursor:pointer}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-hint{color:var(--text3);font-size:11px;margin-top:4px}
+.form-actions{display:flex;gap:10px;margin-top:18px}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:#0009;backdrop-filter:blur(2px);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:28px;width:460px;max-width:95vw;box-shadow:var(--shadow)}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
+.modal .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+
+/* ── ONLINE PANEL ── */
+.online-user-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+.online-user-header{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .2s}
+.online-user-header:hover{background:var(--bg4)}
+.online-user-header .uname{font-weight:600;font-size:13px;flex:1}
+.online-user-header .sess-count{font-size:11px;color:var(--text2)}
+.online-user-sessions{display:none;border-top:1px solid var(--border)}
+.online-user-sessions.open{display:block}
+.sess-row{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px}
+.sess-row:last-child{border-bottom:none}
+.sess-row .sess-meta{flex:1;min-width:0}
+.sess-row .sess-ip{color:var(--ac);font-weight:600;margin-bottom:2px}
+.sess-row .sess-ua{color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px}
+.sess-row .sess-time{color:var(--text3);white-space:nowrap;font-size:11px;margin-top:2px}
+
+/* ── NOTIFY ── */
+.notify-target{display:flex;gap:10px;margin-bottom:14px}
+.notify-target label{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2)}
+.notify-target input[type=radio]{accent-color:var(--ac)}
+.notify-target label.sel{color:var(--text)}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 18px;color:var(--text);font-size:13px;box-shadow:var(--shadow);z-index:9999;transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none}
+#toast.show{transform:translateY(0);opacity:1}
+#toast.ok{border-color:var(--green);color:var(--green)}
+#toast.err{border-color:var(--red);color:var(--red)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:40px;color:var(--text3);font-size:13px}
+.empty .icon{font-size:32px;margin-bottom:10px}
+
+/* ── SPINNER ── */
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--ac);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── KEY FILTER BUTTONS ── */
+.kfbtn{padding:4px 12px;font-size:11px;background:transparent;color:var(--text3);border:none;border-radius:4px;transition:all .15s}
+.kfbtn:hover{color:var(--text)}
+.kfbtn.active-filt{background:var(--bg2);color:var(--ac);box-shadow:0 1px 4px #0004}
+
+/* ── CONFIRM MODAL ── */
+#m-confirm{position:fixed;inset:0;background:#0009;backdrop-filter:blur(2px);z-index:2000;display:none;align-items:center;justify-content:center}
+#m-confirm.open{display:flex}
+.m-confirm-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:26px;width:360px;max-width:94vw;box-shadow:var(--shadow)}
+.m-confirm-box p{color:var(--text2);font-size:13px;margin-top:8px;line-height:1.5}
+.m-confirm-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>⚙️ Панель администратора</h1>
+    <p>TG Channel Creator</p>
+    <input type="password" id="login-pass" placeholder="Мастер-пароль" autocomplete="off">
+    <button onclick="adminLogin()">Войти</button>
+    <div class="login-err" id="login-err">Неверный пароль</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <span class="logo">TG Channel <span>Admin</span></span>
+    <div class="spacer"></div>
+    <span class="online-pill" id="topbar-online" onclick="switchTab('online', document.querySelector('[data-tab=online]'))" title="Онлайн пользователи">● 0 онлайн</span>
+    <span class="admin-badge">ADMIN</span>
+    <button class="logout-btn" onclick="adminLogout()">Выход</button>
+  </div>
+  <div class="main">
+    <nav class="sidebar">
+      <button class="nav-item active" data-tab="stats"    onclick="switchTab('stats',this)"><span class="icon">📊</span>Статистика</button>
+      <button class="nav-item"        data-tab="online"   onclick="switchTab('online',this)"><span class="icon">🟢</span>Онлайн<span class="nav-count" id="nav-online-count">0</span></button>
+      <button class="nav-item"        data-tab="users"    onclick="switchTab('users',this)"><span class="icon">👥</span>Пользователи</button>
+      <button class="nav-item"        data-tab="keys"     onclick="switchTab('keys',this)"><span class="icon">🔑</span>Ключи</button>
+      <button class="nav-item"        data-tab="sessions" onclick="switchTab('sessions',this)"><span class="icon">🖥</span>Сессии</button>
+      <button class="nav-item"        data-tab="notify"   onclick="switchTab('notify',this)"><span class="icon">📧</span>Рассылка</button>
+      <button class="nav-item"        data-tab="smtp"     onclick="switchTab('smtp',this)"><span class="icon">⚙️</span>SMTP</button>
+    </nav>
+    <div class="content">
+
+      <!-- STATS -->
+      <div class="tab-panel active" id="tab-stats">
+        <div class="section-title">Статистика</div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="val" id="st-total">—</div><div class="lbl">Всего пользователей</div></div>
+          <div class="stat-card green"><div class="val" id="st-verified">—</div><div class="lbl">Верифицированы</div></div>
+          <div class="stat-card red"><div class="val" id="st-blocked">—</div><div class="lbl">Заблокированы</div></div>
+          <div class="stat-card ac clickable" onclick="switchTab('online',document.querySelector('[data-tab=online]'))"><div class="val" id="st-online">—</div><div class="lbl">Онлайн сейчас ↗</div></div>
+          <div class="stat-card green"><div class="val" id="st-activekeys">—</div><div class="lbl">Активных ключей</div></div>
+          <div class="stat-card yellow"><div class="val" id="st-freekeys">—</div><div class="lbl">Свободных ключей</div></div>
+          <div class="stat-card"><div class="val" id="st-today">—</div><div class="lbl">Регистраций сегодня</div></div>
+          <div class="stat-card"><div class="val" id="st-week">—</div><div class="lbl">За неделю</div></div>
+        </div>
+        <button class="btn btn-ghost" onclick="loadStats()">🔄 Обновить</button>
+      </div>
+
+      <!-- ONLINE -->
+      <div class="tab-panel" id="tab-online">
+        <div class="section-title">Онлайн пользователи</div>
+        <div class="toolbar">
+          <input class="search-input" id="on-search" placeholder="🔍 Поиск..." oninput="renderOnline()">
+          <div class="spacer"></div>
+          <button class="btn btn-ghost btn-sm" onclick="loadOnline()">🔄 Обновить</button>
+        </div>
+        <div id="on-list"></div>
+        <div id="on-empty" class="empty" style="display:none"><div class="icon">🟢</div>Нет онлайн пользователей</div>
+      </div>
+
+      <!-- USERS -->
+      <div class="tab-panel" id="tab-users">
+        <div class="section-title">Пользователи</div>
+        <div class="toolbar">
+          <input class="search-input" id="u-search" placeholder="🔍 Поиск..." oninput="renderUsers()">
+          <div class="spacer"></div>
+          <select class="form-control" id="u-filter" onchange="renderUsers()" style="width:140px">
+            <option value="all">Все</option>
+            <option value="online">Онлайн</option>
+            <option value="blocked">Заблокированы</option>
+            <option value="unverified">Не верифицированы</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadUsers()">🔄 Обновить</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Логин</th><th>Email</th><th>Статус</th><th>Ключ (до)</th><th>Сессии</th><th>Зарегистрирован</th><th>Действия</th>
+            </tr></thead>
+            <tbody id="u-tbody"></tbody>
+          </table>
+        </div>
+        <div id="u-empty" class="empty" style="display:none"><div class="icon">👤</div>Пользователи не найдены</div>
+      </div>
+
+      <!-- KEYS -->
+      <div class="tab-panel" id="tab-keys">
+        <div class="section-title">Управление ключами</div>
+
+        <!-- Stats -->
+        <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;" id="k-stats-grid">
+          <div class="stat-card"><div class="val" id="k-st-total">—</div><div class="lbl">Всего</div></div>
+          <div class="stat-card green"><div class="val" id="k-st-active">—</div><div class="lbl">Активных</div></div>
+          <div class="stat-card yellow"><div class="val" id="k-st-free">—</div><div class="lbl">Свободных</div></div>
+          <div class="stat-card red"><div class="val" id="k-st-expired">—</div><div class="lbl">Истёкших</div></div>
+        </div>
+
+        <!-- Add key form -->
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;">Добавить ключ</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:2;min-width:180px;">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Ключ</div>
+              <div style="display:flex;gap:6px;">
+                <input class="form-control" id="k-new-key" placeholder="TGC-XXXX-XXXX-XXXX" style="font-family:monospace;font-size:12px;">
+                <button class="btn btn-ghost btn-sm" onclick="kAutoKey()" title="Сгенерировать">⚡</button>
+              </div>
+            </div>
+            <div style="width:80px;">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Дней</div>
+              <input class="form-control" id="k-new-days" type="number" placeholder="30" min="1">
+            </div>
+            <div style="width:70px;">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Часов</div>
+              <input class="form-control" id="k-new-hours" type="number" placeholder="0" min="0" max="23">
+            </div>
+            <div style="flex:1;min-width:100px;">
+              <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Заметка</div>
+              <input class="form-control" id="k-new-note" placeholder="Заметка">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="kAddOne()" style="align-self:flex-end;">+ Добавить</button>
+          </div>
+          <div id="k-add-msg" style="display:none;margin-top:8px;font-size:12px;"></div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <div style="display:flex;gap:3px;background:var(--bg3);border-radius:6px;padding:3px;border:1px solid var(--border);">
+            <button id="kf-all"     class="btn btn-sm kfbtn active-filt" onclick="kSetFilter('all')">Все</button>
+            <button id="kf-active"  class="btn btn-sm kfbtn" onclick="kSetFilter('active')">Активные</button>
+            <button id="kf-free"    class="btn btn-sm kfbtn" onclick="kSetFilter('free')">Свободные</button>
+            <button id="kf-expired" class="btn btn-sm kfbtn" onclick="kSetFilter('expired')">Истёкшие</button>
+          </div>
+          <input class="search-input" id="k-search" placeholder="🔍 Поиск..." oninput="renderKeys()" style="width:180px;">
+          <div class="spacer"></div>
+          <button class="btn btn-ghost btn-sm" onclick="kBulkGen()">⚡ Пакетная генерация</button>
+          <button class="btn btn-ghost btn-sm" onclick="kExportCSV()">⬇️ CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="kCopyAll()">📋 Копировать</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadKeys()">🔄</button>
+        </div>
+
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Ключ</th><th>Пользователь</th><th>Статус</th><th>Истекает</th><th>Создан</th><th>Заметка</th><th>Действия</th>
+            </tr></thead>
+            <tbody id="k-tbody"></tbody>
+          </table>
+        </div>
+        <div id="k-empty" class="empty" style="display:none"><div class="icon">🔑</div>Ключи не найдены</div>
+      </div>
+
+      <!-- SESSIONS -->
+      <div class="tab-panel" id="tab-sessions">
+        <div class="section-title">Активные сессии</div>
+        <div class="toolbar">
+          <input class="search-input" id="s-search" placeholder="🔍 Поиск по логину / IP..." oninput="renderSessions()">
+          <div class="spacer"></div>
+          <button class="btn btn-ghost btn-sm" onclick="loadSessions()">🔄 Обновить</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Пользователь</th><th>IP</th><th>Браузер / Устройство</th><th>Создана</th><th>Токен</th><th>Действия</th>
+            </tr></thead>
+            <tbody id="s-tbody"></tbody>
+          </table>
+        </div>
+        <div id="s-empty" class="empty" style="display:none"><div class="icon">🖥</div>Нет активных сессий</div>
+      </div>
+
+      <!-- NOTIFY -->
+      <div class="tab-panel" id="tab-notify">
+        <div class="section-title">Рассылка</div>
+        <div class="card">
+          <div class="form-group">
+            <label>Получатель</label>
+            <div class="notify-target">
+              <label class="sel"><input type="radio" name="ntarget" value="all" checked onchange="ntToggle()"> Все пользователи</label>
+              <label><input type="radio" name="ntarget" value="one" onchange="ntToggle()"> Конкретный пользователь</label>
+            </div>
+            <input class="form-control" id="nt-user" placeholder="Логин пользователя" style="display:none">
+          </div>
+          <div class="form-group">
+            <label>Тема письма</label>
+            <input class="form-control" id="nt-subject" placeholder="Тема">
+          </div>
+          <div class="form-group">
+            <label>Сообщение (HTML поддерживается)</label>
+            <textarea class="form-control" id="nt-body" rows="6" placeholder="Текст сообщения..."></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="ntSend()">📤 Отправить</button>
+            <span id="nt-status" style="color:var(--text2);font-size:12px;align-self:center"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SMTP -->
+      <div class="tab-panel" id="tab-smtp">
+        <div class="section-title">Настройки SMTP</div>
+        <div class="card" style="max-width:500px">
+          <div class="form-row">
+            <div class="form-group">
+              <label>SMTP Host</label>
+              <input class="form-control" id="smtp-host" placeholder="smtp.gmail.com">
+            </div>
+            <div class="form-group">
+              <label>Port</label>
+              <input class="form-control" id="smtp-port" placeholder="587" type="number">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email (логин)</label>
+            <input class="form-control" id="smtp-user" placeholder="user@gmail.com">
+          </div>
+          <div class="form-group">
+            <label>Пароль / App Password</label>
+            <input class="form-control" id="smtp-pass" type="password" placeholder="••••••••">
+            <div class="form-hint">Оставьте пустым, чтобы не менять пароль</div>
+          </div>
+          <div class="form-group">
+            <label>From (отображаемое имя)</label>
+            <input class="form-control" id="smtp-from" placeholder="TG Bot &lt;user@gmail.com&gt;">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="smtpSave()">💾 Сохранить</button>
+            <button class="btn btn-ghost" onclick="smtpLoad()">🔄 Обновить</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- USER MODAL -->
+<div class="modal-bg" id="m-user">
+  <div class="modal">
+    <h3 id="mu-title">Пользователь</h3>
+    <div class="form-group">
+      <label>Новый пароль</label>
+      <input class="form-control" id="mu-pass" type="password" placeholder="Оставьте пустым, если не менять">
+    </div>
+    <div class="form-group">
+      <label>Привязать ключ</label>
+      <select class="form-control" id="mu-key">
+        <option value="">— не менять —</option>
+      </select>
+      <div class="form-hint">Выберите свободный ключ из списка</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="modalClose('m-user')">Отмена</button>
+      <button class="btn btn-primary" onclick="muSave()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK GEN MODAL -->
+<div class="modal-bg" id="m-kbulk">
+  <div class="modal">
+    <h3>⚡ Пакетная генерация ключей</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Количество ключей</label>
+        <input class="form-control" id="kb-count" type="number" value="10" min="1" max="500">
+      </div>
+      <div class="form-group">
+        <label>Дней действия</label>
+        <input class="form-control" id="kb-days" type="number" value="30" min="1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Заметка (необязательно)</label>
+      <input class="form-control" id="kb-note" placeholder="Заметка">
+    </div>
+    <div id="kb-progress" style="display:none;margin-top:10px;">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px;" id="kb-prog-text">Создание...</div>
+      <div style="height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;">
+        <div id="kb-prog-bar" style="height:100%;background:var(--ac);width:0%;transition:width .2s;border-radius:2px;"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="modalClose('m-kbulk')">Отмена</button>
+      <button class="btn btn-primary" id="kb-btn" onclick="kBulkDo()">Сгенерировать</button>
+    </div>
+  </div>
+</div>
+
+<!-- KEY EXTEND MODAL -->
+<div class="modal-bg" id="m-kext">
+  <div class="modal">
+    <h3>Продлить ключ</h3>
+    <div id="kext-info" style="color:var(--text2);font-size:13px;margin-bottom:14px"></div>
+    <div class="form-group">
+      <label>Количество дней</label>
+      <input class="form-control" id="kext-days" type="number" value="30" min="1">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="modalClose('m-kext')">Отмена</button>
+      <button class="btn btn-primary" onclick="kExtDo()">Продлить</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="m-confirm">
+  <div class="m-confirm-box">
+    <strong id="mc-title">Подтверждение</strong>
+    <p id="mc-text"></p>
+    <div class="m-confirm-actions">
+      <button class="btn btn-ghost btn-sm" id="mc-cancel">Отмена</button>
+      <button class="btn btn-danger btn-sm" id="mc-ok">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+const ADM = { token: sessionStorage.getItem('adm_token') || '' };
+let _users = [], _keys = [], _sessions = [], _online = [];
+let _muTarget = null, _kextKey = null;
+let _onlineUsernames = new Set();
+
+// ── AUTH ──
+async function adminLogin() {
+  const pass = document.getElementById('login-pass').value.trim();
+  if (!pass) return;
+  const r = await apiFetch('/api/admin/auth', { method: 'POST', body: JSON.stringify({ password: pass }) });
+  if (r && r.ok) {
+    ADM.token = pass;
+    sessionStorage.setItem('adm_token', pass);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    loadStats();
+    loadOnline();
+    startOnlinePoller();
+  } else {
+    const el = document.getElementById('login-err');
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 3000);
+  }
+}
+document.getElementById('login-pass').addEventListener('keydown', e => e.key === 'Enter' && adminLogin());
+
+function adminLogout() {
+  ADM.token = '';
+  sessionStorage.removeItem('adm_token');
+  stopOnlinePoller();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+}
+
+// ── API ──
+async function apiFetch(url, opts = {}) {
+  opts.headers = Object.assign({ 'Content-Type': 'application/json', 'X-Admin': ADM.token }, opts.headers || {});
+  try {
+    const r = await fetch(url, opts);
+    return await r.json();
+  } catch (e) { return null; }
+}
+
+// ── NAV ──
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'stats')    loadStats();
+  if (tab === 'online')   loadOnline();
+  if (tab === 'users')    loadUsers();
+  if (tab === 'keys')     loadKeys();
+  if (tab === 'sessions') loadSessions();
+  if (tab === 'smtp')     smtpLoad();
+}
+
+// ── TOAST ──
+let _toastTimer;
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.className = '', 3000);
+}
+
+// ── CONFIRM ──
+let _confirmResolve = null;
+function adminConfirm(title, text, okLabel = 'Удалить') {
+  document.getElementById('mc-title').textContent = title;
+  document.getElementById('mc-text').textContent = text;
+  document.getElementById('mc-ok').textContent = okLabel;
+  document.getElementById('m-confirm').classList.add('open');
+  return new Promise(res => { _confirmResolve = res; });
+}
+document.getElementById('mc-cancel').onclick = () => { document.getElementById('m-confirm').classList.remove('open'); _confirmResolve && _confirmResolve(false); };
+document.getElementById('mc-ok').onclick    = () => { document.getElementById('m-confirm').classList.remove('open'); _confirmResolve && _confirmResolve(true); };
+
+// ── MODAL ──
+function modalClose(id) { document.getElementById(id).classList.remove('open'); }
+function modalOpen(id)  { document.getElementById(id).classList.add('open'); }
+
+// ── STATS ──
+async function loadStats() {
+  const r = await apiFetch('/api/admin/stats');
+  if (!r || !r.ok) return;
+  const s = r.stats;
+  document.getElementById('st-total').textContent     = s.total_users ?? '—';
+  document.getElementById('st-verified').textContent  = s.verified ?? '—';
+  document.getElementById('st-blocked').textContent   = s.blocked ?? '—';
+  document.getElementById('st-online').textContent    = s.online ?? '—';
+  document.getElementById('st-activekeys').textContent= s.active_keys ?? '—';
+  document.getElementById('st-freekeys').textContent  = s.free_keys ?? '—';
+  document.getElementById('st-today').textContent     = s.reg_today ?? '—';
+  document.getElementById('st-week').textContent      = s.reg_week ?? '—';
+}
+
+// ── ONLINE ──
+let _onlinePoller = null;
+function startOnlinePoller() {
+  _onlinePoller = setInterval(() => { loadOnline(true); }, 30000);
+}
+function stopOnlinePoller() {
+  clearInterval(_onlinePoller);
+}
+
+async function loadOnline(silent = false) {
+  const r = await apiFetch('/api/admin/online');
+  if (!r || !r.ok) return;
+  _online = r.online || [];
+  _onlineUsernames = new Set(_online.map(u => u.username));
+  // update topbar pill
+  const pill = document.getElementById('topbar-online');
+  pill.textContent = `● ${_online.length} онлайн`;
+  // update nav badge
+  document.getElementById('nav-online-count').textContent = _online.length;
+  // update stats card (live)
+  const stEl = document.getElementById('st-online');
+  if (stEl) stEl.textContent = _online.length;
+  renderOnline();
+}
+
+function renderOnline() {
+  const q = document.getElementById('on-search').value.toLowerCase();
+  const rows = _online.filter(u => !q || u.username.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+  const list = document.getElementById('on-list');
+  const empty = document.getElementById('on-empty');
+  if (!rows.length) {
+    list.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = rows.map(u => {
+    const sessHtml = u.sessions.map(s => `
+      <div class="sess-row">
+        <div class="sess-meta">
+          <div class="sess-ip">🌐 ${esc(s.ip || 'неизвестный IP')}</div>
+          <div class="sess-ua">${esc(parseUA(s.user_agent))}</div>
+          <div class="sess-time">Создана: ${s.created_at ? fmtDateTime(s.created_at) : '—'} · Токен: ${esc(s.token)}</div>
+        </div>
+        <button class="btn btn-danger btn-xs" onclick='sRevoke(${JSON.stringify(s.full_token)})'>Завершить</button>
+      </div>`).join('');
+    const blockedBadge = u.blocked ? ' <span class="badge badge-red">Заблок.</span>' : '';
+    return `
+      <div class="online-user-card">
+        <div class="online-user-header" onclick="toggleOnlineCard(this)">
+          <span class="dot-online"></span>
+          <span class="uname">${esc(u.username)}${blockedBadge}</span>
+          <span style="color:var(--text3);font-size:11px">${esc(u.email || '')}</span>
+          <span class="sess-count">${u.sessions.length} сес.</span>
+          <span style="color:var(--text3);margin-left:6px;font-size:11px">▾</span>
+          <button class="btn btn-danger btn-xs" style="margin-left:10px" onclick="event.stopPropagation();uRevokeAll(${JSON.stringify(u.username)})">🚪 Все сессии</button>
+        </div>
+        <div class="online-user-sessions">${sessHtml}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleOnlineCard(header) {
+  const sess = header.nextElementSibling;
+  sess.classList.toggle('open');
+}
+
+// ── USERS ──
+async function loadUsers() {
+  const r = await apiFetch('/api/admin/users');
+  if (!r || !r.ok) return;
+  _users = r.users || [];
+  if (!_onlineUsernames.size) await loadOnline(true);
+  renderUsers();
+}
+
+function renderUsers() {
+  const q = document.getElementById('u-search').value.toLowerCase();
+  const f = document.getElementById('u-filter').value;
+  let rows = _users.filter(u => {
+    if (q && !u.username.toLowerCase().includes(q) && !(u.email || '').toLowerCase().includes(q)) return false;
+    if (f === 'online')     return _onlineUsernames.has(u.username);
+    if (f === 'blocked')    return u.blocked;
+    if (f === 'unverified') return !u.email_verified;
+    return true;
+  });
+  const tbody = document.getElementById('u-tbody');
+  const empty = document.getElementById('u-empty');
+  if (!rows.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = rows.map(u => {
+    const blocked  = u.blocked;
+    const verified = u.email_verified;
+    const isOnline = _onlineUsernames.has(u.username);
+    const statusBadge = blocked
+      ? '<span class="badge badge-red">Заблок.</span>'
+      : verified ? '<span class="badge badge-green">Активен</span>'
+      : '<span class="badge badge-yellow">Не подтв.</span>';
+    const onlineDot = isOnline ? '<span class="dot-online" title="Онлайн"></span>' : '';
+    const keyInfo = u.license_expires
+      ? `<span class="badge badge-blue" title="${esc(u.license_key || '')}">${fmtDate(u.license_expires)}</span>`
+      : '<span class="badge badge-gray">Нет</span>';
+    const sessBadge = u.sessions
+      ? `<span class="badge ${isOnline ? 'badge-green' : 'badge-gray'}">${u.sessions}</span>`
+      : '<span class="badge badge-gray">0</span>';
+    return `<tr>
+      <td>${onlineDot}<strong>${esc(u.username)}</strong></td>
+      <td>${esc(u.email || '—')}</td>
+      <td>${statusBadge}</td>
+      <td>${keyInfo}</td>
+      <td>${sessBadge}</td>
+      <td>${u.created_at ? fmtDate(u.created_at) : '—'}</td>
+      <td>
+        <button class="btn btn-ghost btn-xs" onclick='uEdit(${JSON.stringify(u.username)})'>✏️</button>
+        <button class="btn btn-ghost btn-xs" onclick='uToggleBlock(${JSON.stringify(u.username)},${blocked})'>${blocked ? '🔓' : '🔒'}</button>
+        <button class="btn btn-ghost btn-xs" onclick='uRevokeAll(${JSON.stringify(u.username)})'>🚪</button>
+        <button class="btn btn-danger btn-xs" onclick='uDelete(${JSON.stringify(u.username)})'>🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function uEdit(username) {
+  _muTarget = username;
+  document.getElementById('mu-title').textContent = 'Редактировать: ' + username;
+  document.getElementById('mu-pass').value = '';
+  const r = await apiFetch('/api/admin/licenses');
+  const freeKeys = r && r.ok ? (r.licenses || []).filter(k => !k.username) : [];
+  const sel = document.getElementById('mu-key');
+  sel.innerHTML = '<option value="">— не менять —</option>' + freeKeys.map(k =>
+    `<option value="${esc(k.key)}">${esc(k.key)} (до ${fmtDate(k.expires_at)})</option>`
+  ).join('');
+  modalOpen('m-user');
+}
+async function muSave() {
+  const pass = document.getElementById('mu-pass').value;
+  const key  = document.getElementById('mu-key').value;
+  if (pass) {
+    const r = await apiFetch('/api/admin/users/reset-password', { method: 'POST', body: JSON.stringify({ username: _muTarget, new_password: pass }) });
+    if (!r || !r.ok) { toast('Ошибка смены пароля', 'err'); return; }
+  }
+  if (key) {
+    const r = await apiFetch('/api/admin/users/set-key', { method: 'POST', body: JSON.stringify({ username: _muTarget, key }) });
+    if (!r || !r.ok) { toast('Ошибка привязки ключа', 'err'); return; }
+  }
+  if (!pass && !key) { modalClose('m-user'); return; }
+  toast('Изменения сохранены');
+  modalClose('m-user');
+  loadUsers();
+}
+async function uToggleBlock(username, currently_blocked) {
+  const r = await apiFetch('/api/admin/users/block', { method: 'POST', body: JSON.stringify({ username, block: !currently_blocked }) });
+  if (r && r.ok) { toast(currently_blocked ? 'Разблокирован' : 'Заблокирован'); loadUsers(); }
+  else toast('Ошибка', 'err');
+}
+async function uRevokeAll(username) {
+  const ok = await adminConfirm('Завершить сессии', `Завершить все сессии пользователя ${username}?`, 'Завершить');
+  if (!ok) return;
+  const r = await apiFetch('/api/admin/sessions/revoke-user', { method: 'POST', body: JSON.stringify({ username }) });
+  if (r && r.ok) { toast('Сессии завершены'); loadUsers(); loadOnline(true); }
+  else toast('Ошибка', 'err');
+}
+async function uDelete(username) {
+  const ok = await adminConfirm('Удалить пользователя', `Удалить "${username}" без возможности восстановления?`);
+  if (!ok) return;
+  const r = await apiFetch('/api/admin/users/delete', { method: 'POST', body: JSON.stringify({ username }) });
+  if (r && r.ok) { toast('Удалён'); loadUsers(); loadOnline(true); }
+  else toast('Ошибка', 'err');
+}
+
+// ── KEYS ──
+let _kFilter = 'all';
+
+function kGenSeg() { return Math.random().toString(36).substring(2,6).toUpperCase(); }
+function kGenNewKey() { return `TGC-${kGenSeg()}-${kGenSeg()}-${kGenSeg()}`; }
+
+function kAutoKey() {
+  document.getElementById('k-new-key').value = kGenNewKey();
+}
+
+async function loadKeys() {
+  const r = await apiFetch('/api/admin/licenses');
+  if (!r || !r.ok) return;
+  _keys = r.licenses || [];
+  _updateKeyStats();
+  renderKeys();
+}
+
+function _updateKeyStats() {
+  const now = Date.now() / 1000;
+  const total   = _keys.length;
+  const active  = _keys.filter(k => k.username && !k.expired).length;
+  const free    = _keys.filter(k => !k.username).length;
+  const expired = _keys.filter(k => k.expired).length;
+  document.getElementById('k-st-total').textContent   = total;
+  document.getElementById('k-st-active').textContent  = active;
+  document.getElementById('k-st-free').textContent    = free;
+  document.getElementById('k-st-expired').textContent = expired;
+}
+
+function kSetFilter(f) {
+  _kFilter = f;
+  document.querySelectorAll('.kfbtn').forEach(b => b.classList.remove('active-filt'));
+  document.getElementById('kf-' + f).classList.add('active-filt');
+  renderKeys();
+}
+
+function renderKeys() {
+  const q = (document.getElementById('k-search').value || '').toLowerCase();
+  let rows = _keys.filter(k => {
+    if (q && !k.key.toLowerCase().includes(q) && !(k.username || '').toLowerCase().includes(q) && !(k.note || '').toLowerCase().includes(q)) return false;
+    if (_kFilter === 'active')  return k.username && !k.expired;
+    if (_kFilter === 'free')    return !k.username;
+    if (_kFilter === 'expired') return k.expired;
+    return true;
+  });
+  const tbody = document.getElementById('k-tbody');
+  const empty = document.getElementById('k-empty');
+  if (!rows.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = rows.map(k => {
+    const badge = !k.username
+      ? '<span class="badge badge-gray">Свободен</span>'
+      : k.expired
+        ? '<span class="badge badge-red">Истёк</span>'
+        : '<span class="badge badge-green">Активен</span>';
+    const expStr = k.expires_at ? fmtDate(k.expires_at) : '<span style="color:var(--text3)">∞</span>';
+    return `<tr>
+      <td><code style="font-size:11px;color:var(--text)">${esc(k.key)}</code></td>
+      <td>${k.username ? `<span style="color:var(--ac)">${esc(k.username)}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
+      <td>${badge}</td>
+      <td style="white-space:nowrap">${expStr}</td>
+      <td style="white-space:nowrap;color:var(--text3);font-size:11px">${k.created_at ? esc(k.created_at.slice(0,10)) : '—'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(k.note || '')}">${k.note ? esc(k.note) : '—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-xs" onclick='kExtOpen(${JSON.stringify(k.key)},${JSON.stringify(k.expires_at)})'>⏳ Продлить</button>
+        ${k.username ? `<button class="btn btn-ghost btn-xs" onclick='kUnbind(${JSON.stringify(k.key)})'>🔓 Отвязать</button>` : ''}
+        <button class="btn btn-danger btn-xs" onclick='kDelete(${JSON.stringify(k.key)})'>🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function kAddOne() {
+  let key   = document.getElementById('k-new-key').value.trim().toUpperCase();
+  const days  = parseInt(document.getElementById('k-new-days').value) || 0;
+  const hours = parseInt(document.getElementById('k-new-hours').value) || 0;
+  const note  = document.getElementById('k-new-note').value.trim();
+  const msgEl = document.getElementById('k-add-msg');
+  if (!key) key = kGenNewKey();
+  const r = await apiFetch('/api/admin/licenses/add', { method: 'POST', body: JSON.stringify({ key, days, hours, note }) });
+  msgEl.style.display = 'block';
+  if (r && r.ok) {
+    msgEl.style.color = 'var(--green)';
+    msgEl.textContent = `✓ Ключ добавлен: ${key}`;
+    document.getElementById('k-new-key').value = '';
+    document.getElementById('k-new-note').value = '';
+    document.getElementById('k-new-days').value = '';
+    document.getElementById('k-new-hours').value = '';
+    loadKeys();
+  } else {
+    msgEl.style.color = 'var(--red)';
+    msgEl.textContent = '✗ ' + (r?.error || 'Ошибка');
+  }
+  setTimeout(() => msgEl.style.display = 'none', 3000);
+}
+
+function kBulkGen() { modalOpen('m-kbulk'); }
+async function kBulkDo() {
+  const count = Math.min(parseInt(document.getElementById('kb-count').value) || 1, 500);
+  const days  = parseInt(document.getElementById('kb-days').value) || 30;
+  const note  = document.getElementById('kb-note').value.trim();
+  const btn   = document.getElementById('kb-btn');
+  const prog  = document.getElementById('kb-progress');
+  const bar   = document.getElementById('kb-prog-bar');
+  const txt   = document.getElementById('kb-prog-text');
+  btn.disabled = true;
+  prog.style.display = 'block';
+  let done = 0, failed = 0;
+  for (let i = 0; i < count; i++) {
+    const key = kGenNewKey();
+    const r = await apiFetch('/api/admin/licenses/add', { method: 'POST', body: JSON.stringify({ key, days, note }) });
+    if (r && r.ok) done++; else failed++;
+    const pct = Math.round(((i + 1) / count) * 100);
+    bar.style.width = pct + '%';
+    txt.textContent = `Создано: ${done} / ${count}${failed ? ` (ошибок: ${failed})` : ''}`;
+  }
+  btn.disabled = false;
+  prog.style.display = 'none';
+  bar.style.width = '0%';
+  toast(`Создано: ${done}${failed ? `, ошибок: ${failed}` : ''}`);
+  modalClose('m-kbulk');
+  loadKeys();
+}
+
+function kExtOpen(key, expiresAt) {
+  _kextKey = key;
+  document.getElementById('kext-info').textContent = expiresAt ? `Текущий срок: ${fmtDate(expiresAt)}` : 'Ключ ещё не активирован';
+  document.getElementById('kext-days').value = 30;
+  modalOpen('m-kext');
+}
+async function kExtDo() {
+  const days = parseInt(document.getElementById('kext-days').value) || 30;
+  const r = await apiFetch('/api/admin/licenses/extend', { method: 'POST', body: JSON.stringify({ key: _kextKey, days }) });
+  if (r && r.ok) { toast('Продлён'); modalClose('m-kext'); loadKeys(); }
+  else toast(r?.error || 'Ошибка', 'err');
+}
+async function kUnbind(key) {
+  const ok = await adminConfirm('Отвязать ключ', `Отвязать ключ от пользователя?`, 'Отвязать');
+  if (!ok) return;
+  const r = await apiFetch('/api/admin/licenses/unbind', { method: 'POST', body: JSON.stringify({ key }) });
+  if (r && r.ok) { toast('Отвязан'); loadKeys(); }
+  else toast(r?.error || 'Ошибка', 'err');
+}
+async function kDelete(key) {
+  const ok = await adminConfirm('Удалить ключ', `Удалить ключ "${key}"?`);
+  if (!ok) return;
+  const r = await apiFetch('/api/admin/licenses/delete', { method: 'POST', body: JSON.stringify({ key }) });
+  if (r && r.ok) { toast('Удалён'); loadKeys(); }
+  else toast(r?.error || 'Ошибка', 'err');
+}
+function kExportCSV() {
+  if (!_keys.length) { toast('Нет данных', 'err'); return; }
+  const rows = [['KEY','USERNAME','STATUS','EXPIRES_AT','CREATED_AT','NOTE']];
+  _keys.forEach(k => rows.push([
+    k.key, k.username || '', k.expired ? 'expired' : k.username ? 'active' : 'free',
+    k.expires_at || '∞', k.created_at || '', k.note || ''
+  ]));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
+  a.download = `licenses_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+function kCopyAll() {
+  const visible = _keys.filter(k => {
+    if (_kFilter === 'active')  return k.username && !k.expired;
+    if (_kFilter === 'free')    return !k.username;
+    if (_kFilter === 'expired') return k.expired;
+    return true;
+  });
+  if (!visible.length) { toast('Нет ключей', 'err'); return; }
+  navigator.clipboard.writeText(visible.map(k => k.key).join('\n'))
+    .then(() => toast(`Скопировано: ${visible.length}`))
+    .catch(() => toast('Ошибка копирования', 'err'));
+}
+
+// ── SESSIONS ──
+async function loadSessions() {
+  const r = await apiFetch('/api/admin/sessions');
+  if (!r || !r.ok) return;
+  _sessions = r.sessions || [];
+  renderSessions();
+}
+function renderSessions() {
+  const q = document.getElementById('s-search').value.toLowerCase();
+  const rows = _sessions.filter(s =>
+    !q || s.username.toLowerCase().includes(q) || (s.ip || '').includes(q)
+  );
+  const tbody = document.getElementById('s-tbody');
+  const empty = document.getElementById('s-empty');
+  if (!rows.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = rows.map(s => `<tr>
+    <td><strong>${esc(s.username)}</strong></td>
+    <td><span style="color:var(--ac);font-weight:600">${esc(s.ip || '—')}</span></td>
+    <td style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(s.user_agent || '')}">${esc(parseUA(s.user_agent || ''))}</td>
+    <td style="white-space:nowrap">${s.created_at ? fmtDateTime(s.created_at) : '—'}</td>
+    <td><code style="font-size:11px;color:var(--text3)">${esc(s.token)}</code></td>
+    <td><button class="btn btn-danger btn-xs" onclick='sRevoke(${JSON.stringify(s.full_token)})'>🚪 Завершить</button></td>
+  </tr>`).join('');
+}
+async function sRevoke(token) {
+  const ok = await adminConfirm('Завершить сессию', 'Завершить эту сессию?', 'Завершить');
+  if (!ok) return;
+  const r = await apiFetch('/api/admin/sessions/revoke', { method: 'POST', body: JSON.stringify({ token }) });
+  if (r && r.ok) { toast('Сессия завершена'); loadSessions(); loadOnline(true); }
+  else toast('Ошибка', 'err');
+}
+
+// ── NOTIFY ──
+function ntToggle() {
+  const target = document.querySelector('input[name=ntarget]:checked').value;
+  document.getElementById('nt-user').style.display = target === 'one' ? '' : 'none';
+  document.querySelectorAll('.notify-target label').forEach(l => {
+    l.classList.toggle('sel', l.querySelector('input').checked);
+  });
+}
+async function ntSend() {
+  const target  = document.querySelector('input[name=ntarget]:checked').value;
+  const username= target === 'one' ? document.getElementById('nt-user').value.trim() : 'all';
+  const subject = document.getElementById('nt-subject').value.trim();
+  const body    = document.getElementById('nt-body').value.trim();
+  if (!subject || !body) { toast('Заполните тему и тело письма', 'err'); return; }
+  const st = document.getElementById('nt-status');
+  st.textContent = 'Отправка...';
+  const r = await apiFetch('/api/admin/notify', { method: 'POST', body: JSON.stringify({ target: username, subject, body }) });
+  if (r && r.ok) { toast(`Отправлено: ${r.sent || 0}${r.failed ? `, ошибок: ${r.failed}` : ''}`); st.textContent = ''; }
+  else { toast('Ошибка отправки', 'err'); st.textContent = ''; }
+}
+
+// ── SMTP ──
+async function smtpLoad() {
+  const r = await apiFetch('/api/admin/settings/smtp');
+  if (!r || !r.ok) return;
+  document.getElementById('smtp-host').value = r.smtp_host || '';
+  document.getElementById('smtp-port').value = r.smtp_port || '';
+  document.getElementById('smtp-user').value = r.smtp_user || '';
+  document.getElementById('smtp-pass').value = r.smtp_password || '';
+  document.getElementById('smtp-from').value = r.smtp_from || '';
+}
+async function smtpSave() {
+  const body = {
+    smtp_host: document.getElementById('smtp-host').value.trim(),
+    smtp_port: parseInt(document.getElementById('smtp-port').value) || 587,
+    smtp_user: document.getElementById('smtp-user').value.trim(),
+    smtp_from: document.getElementById('smtp-from').value.trim(),
+    smtp_password: document.getElementById('smtp-pass').value,
+  };
+  const r = await apiFetch('/api/admin/settings/smtp', { method: 'POST', body: JSON.stringify(body) });
+  if (r && r.ok) toast('SMTP настройки сохранены');
+  else toast('Ошибка сохранения', 'err');
+}
+
+// ── HELPERS ──
+function parseUA(ua) {
+  if (!ua) return '—';
+  // Browser
+  let browser = 'Браузер';
+  if (/Edg\//.test(ua))     browser = 'Edge';
+  else if (/OPR\//.test(ua))browser = 'Opera';
+  else if (/Chrome\//.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//.test(ua))browser = 'Firefox';
+  else if (/Safari\//.test(ua)) browser = 'Safari';
+  // OS
+  let os = '';
+  if (/Windows NT 10/.test(ua))      os = 'Windows 10/11';
+  else if (/Windows NT 6\.1/.test(ua))os = 'Windows 7';
+  else if (/Mac OS X/.test(ua))       os = 'macOS';
+  else if (/Android/.test(ua))        os = 'Android';
+  else if (/iPhone|iPad/.test(ua))    os = 'iOS';
+  else if (/Linux/.test(ua))          os = 'Linux';
+  return os ? `${browser} · ${os}` : browser;
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = new Date(typeof ts === 'number' ? ts * 1000 : ts);
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function fmtDateTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(typeof ts === 'number' ? ts * 1000 : ts);
+  return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──
+if (ADM.token) {
+  apiFetch('/api/admin/auth', { method: 'POST', body: JSON.stringify({ password: ADM.token }) }).then(r => {
+    if (r && r.ok) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      loadStats();
+      loadOnline();
+      startOnlinePoller();
+    }
+  });
+}
+</script>
+</body>
+</html>
