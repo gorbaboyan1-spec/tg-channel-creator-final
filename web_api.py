@@ -292,7 +292,7 @@ if Path(SETTINGS_FILE).exists():
 settings["smtp_host"]      = "smtp.gmail.com"
 settings["smtp_port"]      = 587
 settings["smtp_user"]      = "goroinstag@gmail.com"
-settings["smtp_password"]  = "viqa mzij hhib kluo"
+settings["smtp_password"]  = "vdah xhya nejy kcgv"
 settings["smtp_from_name"] = "TG Channel Creator"
 settings["smtp_tls"]       = True
 
